@@ -1,0 +1,16 @@
+﻿2014/10/09 17:50:04 にビルドを開始しました。
+     1>ノード 2 上のプロジェクト "C:\Users\辰哉\Projects\Github\CalibrateKinectAndDisplay\CalcHomographyForDisplayMarker\CalcHomographyForDisplayMarker.vcxproj" (Build ターゲット)。
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /IC:\opencv249\opencv\build\include /IC:\ARToolKit\include /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Yu"stdafx.h" /Fp"Debug\CalcHomographyForDisplayMarker.pch" /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt CalcHomographyForDisplayMarker.cpp
+         CalcHomographyForDisplayMarker.cpp
+     1>c:\users\辰哉\projects\github\calibratekinectanddisplay\calchomographyfordisplaymarker\calchomographyfordisplaymarker.cpp(42): warning C4018: '<' : signed と unsigned の数値を比較しようとしました。
+     1>c:\users\辰哉\projects\github\calibratekinectanddisplay\calchomographyfordisplaymarker\calchomographyfordisplaymarker.cpp(102): warning C4018: '<' : signed と unsigned の数値を比較しようとしました。
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\辰哉\Projects\Github\CalibrateKinectAndDisplay\Debug\CalcHomographyForDisplayMarker.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\辰哉\Projects\Github\CalibrateKinectAndDisplay\Debug\CalcHomographyForDisplayMarker.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\辰哉\Projects\Github\CalibrateKinectAndDisplay\Debug\CalcHomographyForDisplayMarker.lib" /MACHINE:X86 Debug\CalcHomographyForDisplayMarker.obj
+         Debug\stdafx.obj
+         CalcHomographyForDisplayMarker.vcxproj -> C:\Users\辰哉\Projects\Github\CalibrateKinectAndDisplay\Debug\CalcHomographyForDisplayMarker.exe
+     1>プロジェクト "C:\Users\辰哉\Projects\Github\CalibrateKinectAndDisplay\CalcHomographyForDisplayMarker\CalcHomographyForDisplayMarker.vcxproj" (Build ターゲット) のビルドが完了しました。
+
+ビルドに成功しました。
+
+経過時間 00:00:00.39

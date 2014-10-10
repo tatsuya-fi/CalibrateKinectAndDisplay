@@ -1,5 +1,6 @@
 // ARToolKitForKinectV2.cpp
 //
+ 
 
 #include "stdafx.h"
 

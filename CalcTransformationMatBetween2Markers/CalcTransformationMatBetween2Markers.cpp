@@ -25,6 +25,9 @@ using namespace cv;
 #include <AR/gsub.h>
 
 // グローバル変数
+// 変換行列保存ディレクトリ
+const char* transMatName = ".\\..\\CaliblationDataCombiner\\Data\\T_Marker2Display.xml";
+
 /* カメラ構成 */
 char *vconf_name = "Data/WDM_camera_flipV.xml";	// ビデオデバイスの設定ファイル
 int  xsize;											// ウィンドウサイズ
@@ -204,7 +207,7 @@ void Init(void)
 	
 
 	// ウィンドウタイトルの設定
-	glutSetWindowTitle("Calc trans matrix");
+	glutSetWindowTitle("Calib 2 Marker. s: Save parameter, esc: quit");
 }
 
 ARUint8* cvVideoGetImage()
@@ -473,8 +476,6 @@ void SetupMaterial2(void)
 //=======================================================
 void saveTMatrix()
 {
-	const char* transMatName = "SavedData\\T_Marker2Display.xml";
-
 	// 各Marker to Camera変換行列
 	Mat T1 = (Mat_<float>(4, 4) <<
 		(float)marker[0].patt_trans[0][0], (float)marker[0].patt_trans[0][1], (float)marker[0].patt_trans[0][2], (float)marker[0].patt_trans[0][3],
@@ -517,7 +518,7 @@ void KeyEvent(unsigned char key, int x, int y)
 			saveTMatrix();
 
 			cout << "Press any key for quiting" << endl;
-			getchar();
+			waitKey();
 			Cleanup();
 			exit(0);
 		}

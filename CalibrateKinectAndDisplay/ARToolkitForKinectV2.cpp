@@ -22,6 +22,9 @@ using namespace cv;
 #include <AR/gsub.h>
 
 // グローバル変数
+// 座標変換行列保存名
+const char* transMatName = ".\\..\\CaliblationDataCombiner\\data\\T_Kinect2Marker.xml";
+
 /* カメラ構成 */
 char *vconf_name = "Data/WDM_camera_flipV.xml";	// ビデオデバイスの設定ファイル
 int  xsize;											// ウィンドウサイズ
@@ -183,7 +186,7 @@ void Init(void)
 
 
 	// ウィンドウタイトルの設定
-	glutSetWindowTitle("Calc trans matrix");
+	glutSetWindowTitle("Kinect AR marker. s: save the parameter, esc: quit ");
 
 	cout << "Press 's' key for saving transformation matrix." << endl;
 	cout << "Esc: quit" << endl;
@@ -417,7 +420,6 @@ void SetupMaterial2(void)
 //=======================================================
 void saveTransMat()
 {
-	const char* transMatName = "SavedData\\T_Kinect2Marker.xml";
 	Mat T_Marker2KinectCCamera = (Mat_<float>(4, 4) <<
 		(float)marker.patt_trans[0][0], (float)marker.patt_trans[0][1], (float)marker.patt_trans[0][2], (float)marker.patt_trans[0][3],
 		(float)marker.patt_trans[1][0], (float)marker.patt_trans[1][1], (float)marker.patt_trans[1][2], (float)marker.patt_trans[1][3],
@@ -448,7 +450,7 @@ void KeyEvent(unsigned char key, int x, int y)
 			saveTransMat();
 
 			cout << "Press any key for quit" << endl;
-			getchar();
+			waitKey();
 			exit(0);
 		}
 		else {
@@ -464,6 +466,6 @@ void KeyEvent(unsigned char key, int x, int y)
 void MouseEvent(int button, int state, int x, int y)
 {
 	// 入力状態を表示
-	printf("ボタン：%d 状態：%d 座標：(x,y)=(%d,%d) \n", button, state, x, y);
+	//printf("ボタン：%d 状態：%d 座標：(x,y)=(%d,%d) \n", button, state, x, y);
 }
 

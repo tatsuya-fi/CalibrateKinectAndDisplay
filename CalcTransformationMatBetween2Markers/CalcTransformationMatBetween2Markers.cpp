@@ -33,8 +33,12 @@ int  thresh = 100;									// 2値化の閾値
 int  countT = 0;										// 処理フレーム数
 
 /* カメラパラメータ */
-char *cparam_name = "Data/camera_para.dat";			// カメラパラメータファイル
+const char *cparam_name = "Data/intrinsicParam.xml";			// カメラパラメータファイル
+//char *cparam_name = "Data/camera_para.dat";			// カメラパラメータファイル
 ARParam cparam;										// カメラパラメータ
+static Mat cameraPara, distCoeffs;
+
+static ARGL_CONTEXT_SETTINGS_REF gArglSettings = NULL;
 
 /* カメラからの画像格納用(OpenCV) */
 static Mat imageMat;
@@ -45,11 +49,14 @@ static VideoCapture cap(0);
 //----- ディスプレイに設置するマーカ
 #define MARK1_MARK_ID	1						// マーカーID
 #define MARK1_PATT_NAME	"Data\\patt.hiro"		// パターンファイル名
-#define MARK1_SIZE		189.0					// パターンの幅（mm）
+#define MARK1_SIZE		183.0					// パターンの幅（mm）
+//#define MARK1_SIZE		715.0					// パターンの幅（mm）
 //----- プリントしてKinectでも撮影するマーカ
 #define MARK2_MARK_ID	2						// マーカーID
 #define MARK2_PATT_NAME	"Data\\patt.sample1"	// パターンファイル名
-#define MARK2_SIZE		188.5					// パターンの幅（mm）
+#define MARK2_SIZE		188.0					// パターンの幅（mm
+//#define MARK2_PATT_NAME	"Data\\patt.sample2"	// パターンファイル名
+//#define MARK2_SIZE		673.0					// パターンの幅（mm）
 //-----
 //#define MARK3_MARK_ID	3						// マーカーID
 //#define MARK3_PATT_NAME	"Data\\patt.kanji"		// パターンファイル名
@@ -108,6 +115,37 @@ int main(int argc, char **argv)
 	return 0;
 }
 
+int arParamLoadCV(const char* cparam_name, ARParam* wparam)
+{
+	FileStorage cvfs(cparam_name, CV_STORAGE_READ);
+	FileNode node(cvfs.fs, NULL);
+	FileNode fn = node[string("mat_array")];
+	read(fn[0], cameraPara);
+	read(fn[1], distCoeffs);
+
+	wparam->mat[0][0] = cameraPara.at<double>(0, 0);
+	wparam->mat[0][1] = cameraPara.at<double>(0, 1);
+	wparam->mat[0][2] = cameraPara.at<double>(0, 2);
+	wparam->mat[0][3] = 0;
+	wparam->mat[1][0] = cameraPara.at<double>(1, 0);
+	wparam->mat[1][1] = cameraPara.at<double>(1, 1);
+	wparam->mat[1][2] = cameraPara.at<double>(1, 2);
+	wparam->mat[1][3] = 0;
+	wparam->mat[2][0] = cameraPara.at<double>(2, 0);
+	wparam->mat[2][1] = cameraPara.at<double>(2, 1);
+	wparam->mat[2][2] = cameraPara.at<double>(2, 2);
+	wparam->mat[2][3] = 0;
+
+	wparam->dist_factor[0] = cameraPara.at<double>(0, 2);
+	wparam->dist_factor[1] = cameraPara.at<double>(1, 2);
+	wparam->dist_factor[2] = 1;// distCoeffs.at<double>(0, 0);
+	wparam->dist_factor[3] = 1;
+
+	wparam->xsize = xsize;
+	wparam->ysize = ysize;
+
+	return 0;
+}
 
 //=======================================================
 // 初期化関数
@@ -129,10 +167,11 @@ void Init(void)
 	//if (arVideoInqSize(&xsize, &ysize) < 0) exit(0);
 	xsize = cap.get(CV_CAP_PROP_FRAME_WIDTH);
 	ysize = cap.get(CV_CAP_PROP_FRAME_HEIGHT);
-	printf("Image size (x,y) = (%d,$d)\n", xsize, ysize);
+	printf("Image size (x,y) = (%d,%d)\n", xsize, ysize);
 
 	// カメラパラメータの設定
-	if (arParamLoad(cparam_name, 1, &wparam) < 0){
+	//if (arParamLoad(cparam_name, 1, &wparam) < 0){
+	if (arParamLoadCV(cparam_name, &wparam) < 0){
 		printf("カメラパラメータの読み込みに失敗しました\n");
 		exit(0);
 	}
@@ -156,6 +195,14 @@ void Init(void)
 	// gsubライブラリの初期化
 	argInit(&cparam, 1.0, 0, 0, 0, 0);
 
+	// Setup argl library for current context.
+	
+	if ((gArglSettings = arglSetupForCurrentContext()) == NULL) {
+		fprintf(stderr, "main(): arglSetupForCurrentContext() returned error.\n");
+		exit(-1);
+	}
+	
+
 	// ウィンドウタイトルの設定
 	glutSetWindowTitle("Calc trans matrix");
 }
@@ -164,7 +211,14 @@ ARUint8* cvVideoGetImage()
 {
 	Mat bufMat;
 	cap >> bufMat;
-	cvtColor(bufMat, imageMat, CV_BGR2BGRA);
+
+	if (bufMat.empty()) { return nullptr; }
+
+	// Undistort
+	Mat bufMatUndist;
+	undistort(bufMat, bufMatUndist, cameraPara, distCoeffs);
+	
+	cvtColor(bufMatUndist, imageMat, CV_BGR2BGRA);
 	// ARUint8にキャスト
 	ARUint8 *imageBuffer = reinterpret_cast<ARUint8*>(imageMat.data);
 
@@ -191,6 +245,7 @@ void MainLoop(void)
 	countT++;
 
 	// カメラ画像の描画
+	arglDistortionCompensationSet(gArglSettings, FALSE);	// ARToolKit歪み補正をオフに
 	argDrawMode2D();
 	argDispImage(image, 0, 0);
 
@@ -224,6 +279,8 @@ void MainLoop(void)
 			marker[i].visible = 0;
 			continue;
 		}
+
+		cout << "confidence[" << i << "]: " << marker_info[k].cf << endl;
 
 		// 座標変換行列を取得
 		if (marker[i].visible == 0) {
@@ -311,8 +368,9 @@ void DrawObject(int mark_id, double patt_trans[3][4])
 		SetupMaterial1();
 
 		// 3Dオブジェクトの描画
-		glTranslatef(0.0, 0.0, 25.0);	// マーカの上に載せるためにZ方向（マーカ上方）に25.0[mm]移動
-		glutSolidCube(50.0);			// ソリッドキューブを描画（1辺のサイズ50[mm]）
+		glRotatef(90, 1, 0, 0);
+		//glTranslatef(0.0, 0.0, 25.0);	// マーカの上に載せるためにZ方向（マーカ上方）に25.0[mm]移動
+		glutSolidTeapot(100.0);			// ソリッドキューブを描画（1辺のサイズ50[mm]）
 		break;
 
 	case MARK2_MARK_ID:
@@ -324,8 +382,9 @@ void DrawObject(int mark_id, double patt_trans[3][4])
 		SetupMaterial2();
 
 		// 3Dオブジェクトの描画
-		glTranslatef(0.0, 0.0, 25.0);		// マーカの上に載せるためにZ方向（マーカ上方）に25.0[mm]移動
-		glutSolidSphere(50.0, 10, 10);	// ソリッドスフィアを描画（1辺のサイズ50[mm]）
+		glRotatef(90, 1, 0, 0);
+		//glTranslatef(0.0, 0.0, 50.0);		// マーカの上に載せるためにZ方向（マーカ上方）に25.0[mm]移動
+		glutSolidTeapot(100.0);	// ソリッドスフィアを描画（1辺のサイズ[mm]）
 		break;
 
 	//case MARK3_MARK_ID:
@@ -417,17 +476,17 @@ void saveTMatrix()
 	const char* transMatName = "SavedData\\T_Marker2Display.xml";
 
 	// 各Marker to Camera変換行列
-	Mat T1 = (Mat_<double>(4, 4) <<
-		marker[0].patt_trans[0][0], marker[0].patt_trans[0][1], marker[0].patt_trans[0][2], marker[0].patt_trans[0][3],
-		marker[0].patt_trans[1][0], marker[0].patt_trans[1][1], marker[0].patt_trans[1][2], marker[0].patt_trans[1][3],
-		marker[0].patt_trans[2][0], marker[0].patt_trans[2][1], marker[0].patt_trans[2][2], marker[0].patt_trans[2][3],
-		0, 0, 0, 1
+	Mat T1 = (Mat_<float>(4, 4) <<
+		(float)marker[0].patt_trans[0][0], (float)marker[0].patt_trans[0][1], (float)marker[0].patt_trans[0][2], (float)marker[0].patt_trans[0][3],
+		(float)marker[0].patt_trans[1][0], (float)marker[0].patt_trans[1][1], (float)marker[0].patt_trans[1][2], (float)marker[0].patt_trans[1][3],
+		(float)marker[0].patt_trans[2][0], (float)marker[0].patt_trans[2][1], (float)marker[0].patt_trans[2][2], (float)marker[0].patt_trans[2][3],
+		0.0f, 0.0f, 0.0f, 1.0f
 		);
-	Mat T2 = (Mat_<double>(4, 4) <<
-		marker[1].patt_trans[0][0], marker[1].patt_trans[0][1], marker[1].patt_trans[0][2], marker[1].patt_trans[0][3],
-		marker[1].patt_trans[1][0], marker[1].patt_trans[1][1], marker[1].patt_trans[1][2], marker[1].patt_trans[1][3],
-		marker[1].patt_trans[2][0], marker[1].patt_trans[2][1], marker[1].patt_trans[2][2], marker[1].patt_trans[2][3],
-		0, 0, 0, 1
+	Mat T2 = (Mat_<float>(4, 4) <<
+		(float)marker[1].patt_trans[0][0], (float)marker[1].patt_trans[0][1], (float)marker[1].patt_trans[0][2], (float)marker[1].patt_trans[0][3],
+		(float)marker[1].patt_trans[1][0], (float)marker[1].patt_trans[1][1], (float)marker[1].patt_trans[1][2], (float)marker[1].patt_trans[1][3],
+		(float)marker[1].patt_trans[2][0], (float)marker[1].patt_trans[2][1], (float)marker[1].patt_trans[2][2], (float)marker[1].patt_trans[2][3],
+		0.0f, 0.0f, 0.0f, 1.0f
 		);
 
 	// Marker2からMarker1への変換行列を求める
@@ -456,6 +515,11 @@ void KeyEvent(unsigned char key, int x, int y)
 	else if (key == 's' || key == 'S'){
 		if (marker[0].visible > 0 && marker[1].visible > 0){
 			saveTMatrix();
+
+			cout << "Press any key for quiting" << endl;
+			getchar();
+			Cleanup();
+			exit(0);
 		}
 		else {
 			printf("Couldn't find all markers, try again.\n");
